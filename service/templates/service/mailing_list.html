@@ -1,0 +1,65 @@
+{% extends 'service/base.html' %}
+
+{% block content %}
+
+{% if request.user.is_authenticated %}
+<div class="col-12 mb-4">
+    {% if perms.service.add_mailing%}
+    <a class="btn btn-outline-primary" href="{% url 'service:create_mailing'%}">Добавить рассылку</a>
+    {% endif %}
+</div>
+<div class="col-12 mb-4">
+    <h5 class="my-0 mr-md-auto font-weight-normal">Всего рассылок - {{mailing_count}} </h5>
+    <h5 class="my-0 mr-md-auto font-weight-normal">Активных рассылок - {{active_mailing_count}} </h5>
+    <h5 class="my-0 mr-md-auto font-weight-normal">Количество клиентов для рассылок - {{clients_count}} </h5>
+</div>
+{% endif %}
+
+<div class="container">
+    <div class="row text-center">
+        {% for object in object_list %}
+        <div class="col-3">
+            <div class="card mb-4 box-shadow">
+                <div class="card-header">
+                    <h4 class="my-0 font-weight-normal">{{ object }}</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mt-3 mb-4 text-start m-3">{{object.body|slice:100}}</ul>
+                    <a class="p-2 btn btn-outline-primary" href="{% url 'service:mailing' object.pk %}">View</a>
+                    {% if perms.service.change_mailing%}
+                    <a class="p-2 btn btn-outline-primary" href="{% url 'service:update_mailing' object.pk %}">Edit</a>
+                    {% endif %}
+                    {% if perms.service.delete_mailing%}
+                    <a class="p-2 btn btn-outline-primary"
+                       href="{% url 'service:delete_mailing' object.pk %}">Delete</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+
+<div class="container">
+    <h2 class="card-title pricing-card-title text-center"> Блог </h2>
+
+    <div class="row text-center">
+        {% for article in articles %}
+        <div class="col-3">
+            <div class="card mb-4 box-shadow">
+                <div class="card-header">
+                    <h4 class="my-0 font-weight-normal">{{ article }}</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mt-3 mb-4 text-start m-3">{{article.body|slice:100}}</ul>
+                    <div class="btn-group">
+                        <a class="p-2 btn btn-outline-primary" href="{% url 'blog:view' article.pk %}">Read</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'service/base.html' %}
+{% load my_tags%}
+{% block content %}
+<div class="container">
+    <h1 class="card-title pricing-card-title text-center"> {{object.title}} </h1>
+    <div class="row text-start">
+        <img src="/media/{{ object.preview }}" class="rounded float-left" width="250" height="250">
+        <div class="col-lg-9 col-md-6 col-sm-12">
+            <div class="card mb-4 box-shadow">
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <tr>
+                            <td class="w-25">Описание</td>
+                            <td> {{ object.body }} </td>
+                        </tr>
+                        <tr>
+                            <td class="w-25">Дата создания</td>
+                            <td> {{ object.creation_date }} </td>
+                        </tr>
+                        <tr>
+                            <td class="w-25">Количество просмотров</td>
+                            <td> {{ object.views }} </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

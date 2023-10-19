@@ -1,0 +1,35 @@
+{% extends 'service/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1 class="card-title pricing-card-title text-center"> Логи по рассылке {{ title_mailing }} </h1>
+    <div class="row text-start">
+        <div class="col-lg-12 col-md-6 col-sm-12">
+            <div class="card mb-4 box-shadow">
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <tr>
+                            <th>Почтовый адрес рассылки</th>
+                            <th>Время последней попытки</th>
+                            <th>Статус попытки</th>
+                            <th>Ответ почтого сервиса</th>
+                        </tr>
+                        {% for item in logs_mailing %}
+                        <tr>
+                            <td>{{ item.email }}</td>
+                            <td>{{ item.time }}</td>
+                            <td>{{ item.get_status_display }}</td>
+                            {% if item.period %}
+                            <td>{{ item.period }}</td>
+                            {% else %}
+                            <td> - </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
