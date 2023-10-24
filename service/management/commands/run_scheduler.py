@@ -1,22 +1,15 @@
 import logging
 
-from django.conf import settings
-
-from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 from django.core.management.base import BaseCommand
-from django_apscheduler.jobstores import DjangoJobStore
 from django_apscheduler.models import DjangoJobExecution
 from django_apscheduler import util
 
+from config.mailing_scheduler import scheduler
+from service.models import Mailing
 from service.services import send_email
 
 logger = logging.getLogger(__name__)
-
-
-def my_job():
-    # Your job processing logic here...
-    pass
 
 
 # The `close_old_connections` decorator ensures that database connections, that have become
@@ -39,30 +32,43 @@ class Command(BaseCommand):
     help = "Runs APScheduler."
 
     def handle(self, *args, **options):
-        scheduler = BlockingScheduler(timezone=settings.TIME_ZONE)
-        scheduler.add_jobstore(DjangoJobStore(), "default")
 
-        scheduler.add_job(
-            send_email,
-            kwargs={"email": "mail.ru"},
-            trigger=CronTrigger(second="*/10"),  # Every 10 seconds
-            id="my_job",  # The `id` assigned to each job MUST be unique
-            max_instances=1,
-            replace_existing=True,
-        )
+        mailing_items = Mailing.objects.all()
+        for item in mailing_items:
+            mailing_title = item.title
+            mailing_body = item.body
+            email_list = [cl for cl in item.clients.all()]
 
-        scheduler.add_job(
-            delete_old_job_executions,
-            trigger=CronTrigger(
-                day_of_week="mon", hour="00", minute="00"
-            ),  # Midnight on Monday, before start of the next work week.
-            id="delete_old_job_executions",
-            max_instances=1,
-            replace_existing=True,
-        )
-        logger.info(
-            "Added weekly job: 'delete_old_job_executions'."
-        )
+            if item.period == 'daily':
+                trigger = CronTrigger(hour='0', minute='00', start_date=item.start_time, end_date=item.finish_time)
+            elif item.period == 'weekly':
+                trigger = CronTrigger(day_of_week='mon', hour='9', start_date=item.start_time, end_date=item.finish_time)
+            elif item.period == 'monthly':
+                trigger = CronTrigger(day='1', hour='9', start_date=item.start_time, end_date=item.finish_time)
+
+            scheduler.add_job(
+                send_email,
+                kwargs={'mailing_title': mailing_title, 'mailing_body': mailing_body, 'email_list': email_list},
+                trigger=trigger,
+                id=f'mailing_{item.title}',
+                max_instances=1,
+                replace_existing=True,
+            )
+
+            logger.info(f"Added job {item.title}.")
+
+            scheduler.add_job(
+                delete_old_job_executions,
+                trigger=CronTrigger(
+                    day_of_week="mon", hour="00", minute="00"
+                ),  # Midnight on Monday, before start of the next work week.
+                id="delete_old_job_executions",
+                max_instances=1,
+                replace_existing=True,
+            )
+            logger.info(
+                "Added weekly job: 'delete_old_job_executions'."
+            )
 
         try:
             logger.info("Starting scheduler...")

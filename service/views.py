@@ -2,11 +2,13 @@ import random
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.http import Http404
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 
 from blog.models import Article
 from service.forms import MailingForm, ClientForm
 from service.models import Mailing, Logs, Client
+from service.services import send_email
 
 
 # Контроллеры для класса Mailing
@@ -31,13 +33,18 @@ class MailingListView(LoginRequiredMixin, ListView):
 
         qs = super().get_queryset()
         context['mailing_count'] = qs.filter(user=self.request.user).count()
-        context['active_mailing_count'] = qs.filter(user=self.request.user).exclude(status='finished').count()
+        context['active_mailing_count'] = qs.filter(user=self.request.user).exclude(status='завершена').count()
         context['clients_count'] = Client.objects.filter(user=self.request.user).count()
         return context
 
 
 class MailingDetailView(LoginRequiredMixin, DetailView):
     model = Mailing
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['logs_mailing'] = Logs.objects.filter(title=self.object.title)
+        return context
 
 
 class MailingCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
@@ -55,6 +62,11 @@ class MailingCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
         self.object = form.save()
         self.object.user = self.request.user
         self.object.save()
+
+        email_list = [cl for cl in self.object.clients.all()]
+
+        if self.object.start_time <= timezone.now():
+            send_email(self.object.title, self.object.body, email_list)
 
         return super().form_valid(form)
 
@@ -135,18 +147,3 @@ class ClientDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = Client
     success_url = reverse_lazy('service:clients')
     permission_required = 'service.delete_client'
-
-
-# Контроллеры для класса Logs
-class LogsListView(LoginRequiredMixin, ListView):
-    model = Logs
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['logs_mailing'] = Logs.objects.filter(title=self.kwargs.get('pk'))
-        context['title_mailing'] = Logs.objects.filter(title=self.kwargs.get('pk')).first().title
-        return context
-
-
-# Функция для периодической отправки email адресатам
-# def

@@ -1,8 +1,7 @@
-from django.conf import settings
-from django.core.mail import send_mail
 from django.core.management import BaseCommand
 
-from service.models import Mailing, Client
+from service.models import Mailing
+from service.services import send_email
 
 
 class Command(BaseCommand):
@@ -13,10 +12,7 @@ class Command(BaseCommand):
 
         for item in mailing_items:
             email_list = [cl for cl in item.clients.all()]
+            mailing_title = item.title
+            mailing_body = item.body
 
-            send_mail(
-                f'{item.title}',
-                f'{item.body}',
-                settings.EMAIL_HOST_USER,
-                email_list
-            )
+            send_email(mailing_title, mailing_body, email_list)

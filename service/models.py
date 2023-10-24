@@ -7,10 +7,6 @@ from django.utils import timezone
 NULLABLE = {'blank': True, 'null': True}
 
 
-# def default_datetime():
-#     return datetime.now()
-
-
 class Client(models.Model):
     email = models.EmailField(verbose_name='почта')
     first_name = models.CharField(max_length=50, verbose_name='Имя', **NULLABLE)
@@ -30,12 +26,6 @@ class Client(models.Model):
 
 class Mailing(models.Model):
 
-    # STATUS = (
-    #     ('finished', 'завершена'),
-    #     ('created', 'создана'),
-    #     ('started', 'запущена')
-    # )
-
     PERIOD = (
         ('daily', 'раз в день'),
         ('weekly', 'раз в неделю'),
@@ -44,11 +34,12 @@ class Mailing(models.Model):
 
     title = models.CharField(max_length=50, verbose_name='Тема рассылки', unique=True)
     body = models.TextField(verbose_name='Тело письма')
-    start_time = models.DateTimeField(verbose_name='Время начала')
+    start_time = models.DateTimeField(verbose_name='Время начала', default=datetime.today())
     finish_time = models.DateTimeField(verbose_name='Время окончания')
     period = models.CharField(max_length=10, choices=PERIOD, verbose_name='Периодичность рассылки')
     status = models.CharField(max_length=10, verbose_name='Статус рассылки', **NULLABLE)
-    clients = models.ManyToManyField(Client, **NULLABLE)
+    is_active = models.BooleanField(verbose_name='Отметка об активности')
+    clients = models.ManyToManyField(Client, verbose_name='Клиенты')
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, verbose_name='Пользователь',
                              **NULLABLE)
@@ -56,10 +47,14 @@ class Mailing(models.Model):
     def save(self, *args, **kwargs):
         if self.finish_time < timezone.now():
             self.status = 'завершена'
+            self.is_active = False
         elif self.start_time > timezone.now():
             self.status = 'создана'
+            self.is_active = True
         else:
             self.status = 'запущена'
+            self.is_active = True
+
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -72,19 +67,11 @@ class Mailing(models.Model):
 
 class Logs(models.Model):
 
-    STATUS = (
-        ('Not_sent', 'Не отправлено'),
-        ('Departure', 'Отправляется'),
-        ('Sent', 'Отправлено')
-    )
-
-    title = models.ForeignKey(Mailing, on_delete=models.CASCADE, verbose_name='Тема рассылки')
-    email = models.ForeignKey(Client, on_delete=models.CASCADE, verbose_name='почта', **NULLABLE)
+    title = models.CharField(max_length=50, verbose_name='Тема рассылки')
+    email = models.EmailField(verbose_name='почта', **NULLABLE)
     time = models.DateTimeField(verbose_name='Дата и время последней попытки')
-    status = models.CharField(max_length=10, choices=STATUS, verbose_name='Статус попытки')
-    period = models.CharField(max_length=50, verbose_name='Ответ почтового сервиса', **NULLABLE)
+    status = models.CharField(max_length=10, verbose_name='Статус попытки')
 
     class Meta:
         verbose_name = 'лог'
         verbose_name_plural = 'логи'
-

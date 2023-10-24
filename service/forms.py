@@ -13,7 +13,7 @@ class StyleFormMixin:
 class MailingForm(StyleFormMixin, forms.ModelForm):
     class Meta:
         model = Mailing
-        exclude = ('user',)
+        exclude = ('status', 'user',)
 
 
 class ClientForm(StyleFormMixin, forms.ModelForm):

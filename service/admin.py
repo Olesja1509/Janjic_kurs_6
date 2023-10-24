@@ -12,7 +12,7 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(Mailing)
 class Mailing(admin.ModelAdmin):
-    list_display = ('title', 'start_time', 'finish_time', 'period', 'status', 'user', )
+    list_display = ('title', 'start_time', 'finish_time', 'period', 'is_active', 'status', 'user', )
     list_filter = ('period', 'status', 'user', )
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
