@@ -4,16 +4,21 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Group
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import send_mail
-from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.shortcuts import redirect
+from django.template.loader import render_to_string
 from django.urls import reverse_lazy, reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from django.views.generic import CreateView, UpdateView
 
 from users.forms import UserRegisterForm, UserProfileForm
 from users.models import User
 from users.services import send_new_password
+from django.contrib.auth.signals import user_logged_in
 
 
 class RegisterView(CreateView):
@@ -24,12 +29,15 @@ class RegisterView(CreateView):
 
     def form_valid(self, form):
         new_user = form.save()
+        token = default_token_generator.make_token(new_user)
+        uid = urlsafe_base64_encode(force_bytes(new_user.pk))
         send_mail(
-            subject='Поздравляем с регистрацией',
-            message= 'Здравствуйте! Спасибо за регистрацию на нашем сайте. Пожалуйста, нажмите на ссылку ниже, '
-                     'чтобы подтвердить свой аккаунт:\n\nhttp://example.com/verify?email={}'.format(new_user.email),
+            subject='Подтверждение адреса электронной почты',
+            message=f'Для подтверждения адреса электронной почты перейдите по ссылке: '
+                      f'http://example.com//accounts/verify/{uid}/{token}/',
             from_email=settings.EMAIL_HOST_USER,
-            recipient_list=[new_user.email]
+            recipient_list=[new_user.email],
+            fail_silently=False,
         )
 
         return super().form_valid(form)
@@ -53,8 +61,7 @@ def generate_new_password(request):
     return redirect(reverse('service:index'))
 
 
-@receiver(post_save, sender=User)
-def add_user_to_group(instance, created, **kwargs):
-    if created:
-        group = Group.objects.get(name='auth_user')
-        instance.groups.add(group)
+@receiver(user_logged_in)
+def set_user_permission(user, **kwargs):
+    group = Group.objects.get(name='auth_user')
+    user.groups.add(group)

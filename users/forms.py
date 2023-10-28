@@ -11,6 +11,13 @@ class UserRegisterForm(StyleFormMixin, UserCreationForm):
         model = User
         fields = ('email', 'password1', 'password2')
 
+    def save(self, commit=True):
+        user = super(UserRegisterForm, self).save(commit=False)
+        user.email = self.cleaned_data['email']
+        if commit:
+            user.save()
+        return user
+
 
 class UserProfileForm(StyleFormMixin, UserChangeForm):
 

@@ -29,7 +29,10 @@ class MailingListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['articles'] = random.sample(list(Article.objects.all()), 3)
+        if len(Article.objects.all()) < 3:
+            context['articles'] = list(Article.objects.all())
+        else:
+            context['articles'] = random.sample(list(Article.objects.all()), 3)
 
         qs = super().get_queryset()
         context['mailing_count'] = qs.filter(user=self.request.user).count()
