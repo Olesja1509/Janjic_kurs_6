@@ -20,6 +20,7 @@ pyramid-mailer = "^0.15.1"
 django-scheduler = "^0.10.1"
 tokens = "^0.0.3"
 accounts = "^0.2.4"
+django-allauth = "^0.58.1"
 
 
 [build-system]

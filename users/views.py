@@ -28,15 +28,23 @@ class RegisterView(CreateView):
     success_url = reverse_lazy('users:login')
 
     def form_valid(self, form):
-        new_user = form.save()
-        token = default_token_generator.make_token(new_user)
-        uid = urlsafe_base64_encode(force_bytes(new_user.pk))
+        user = form.save(commit=False)
+        user.is_active = False
+        user.save()
+
+        current_site = get_current_site(self.request)
+        message = render_to_string('users/account_activation_email.html', {
+            'user': user,
+            'domain': current_site.domain,
+            'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+            'token': default_token_generator.make_token(user),
+        })
+
         send_mail(
             subject='Подтверждение адреса электронной почты',
-            message=f'Для подтверждения адреса электронной почты перейдите по ссылке: '
-                      f'http://example.com//accounts/verify/{uid}/{token}/',
+            message=message,
             from_email=settings.EMAIL_HOST_USER,
-            recipient_list=[new_user.email],
+            recipient_list=[user.email],
             fail_silently=False,
         )
 
@@ -65,3 +73,4 @@ def generate_new_password(request):
 def set_user_permission(user, **kwargs):
     group = Group.objects.get(name='auth_user')
     user.groups.add(group)
+

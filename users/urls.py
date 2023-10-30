@@ -13,4 +13,5 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('profile/', ProfileView.as_view(), name='profile'),
     path('profile/genpassword/', generate_new_password, name='generate_new_password'),
+
 ]
